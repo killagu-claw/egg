@@ -59,6 +59,11 @@ export default class Test<T extends typeof Test> extends BaseCommand<T> {
       default: false,
       char: 'w',
     }),
+    pool: Flags.string({
+      description: 'vitest worker pool type',
+      options: ['forks', 'threads'],
+      default: process.env.EGG_VITEST_POOL ?? 'threads',
+    }),
   };
 
   public async run(): Promise<void> {
@@ -140,6 +145,9 @@ export default class Test<T extends typeof Test> extends BaseCommand<T> {
 
     // expose timeout to test fixtures (e.g. for testing timeout behavior)
     process.env.EGG_BIN_TIMEOUT = String(flags.timeout);
+
+    // propagate pool mode so downstream code (e.g. @eggjs/mock) can detect it
+    process.env.EGG_VITEST_POOL = flags.pool;
 
     debug('run test with vitest, files: %o, flags: %o', files, flags);
     const config = await this.buildVitestConfig(files);
@@ -245,7 +253,7 @@ export default class Test<T extends typeof Test> extends BaseCommand<T> {
       setupFiles,
       runner,
       reporters: [process.env.TEST_REPORTER ?? 'default'],
-      pool: 'forks',
+      pool: flags.pool as 'forks' | 'threads',
       fileParallelism: process.env.EGG_FILE_PARALLELISM !== 'false',
       // vitest 4 moved poolOptions to top-level
       execArgv: [...this.globalExecArgv],
