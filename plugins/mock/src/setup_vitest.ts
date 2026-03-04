@@ -58,5 +58,13 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  // When vitest runs without isolation (isolate: false), the app is shared
+  // across all test files in the same worker. afterAll still fires per-file,
+  // so closing the app here would destroy tegg runtime state (LoadUnitInstances)
+  // and cause subsequent files to fail with "not found load unit for proto".
+  // Worker thread termination handles cleanup when the test run finishes.
+  const sharedMode =
+    (globalThis as Record<string, unknown>).__eggVitestSharedMode || process.env.EGG_VITEST_ISOLATE === 'false';
+  if (sharedMode) return;
   if (app) await app.close();
 });

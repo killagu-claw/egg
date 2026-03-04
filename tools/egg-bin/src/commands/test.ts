@@ -149,6 +149,9 @@ export default class Test<T extends typeof Test> extends BaseCommand<T> {
     // propagate pool mode so downstream code (e.g. @eggjs/mock) can detect it
     process.env.EGG_VITEST_POOL = flags.pool;
 
+    // propagate isolate mode so downstream code can detect shared mode
+    process.env.EGG_VITEST_ISOLATE = process.env.EGG_VITEST_ISOLATE ?? 'true';
+
     debug('run test with vitest, files: %o, flags: %o', files, flags);
     const config = await this.buildVitestConfig(files);
 
@@ -254,6 +257,7 @@ export default class Test<T extends typeof Test> extends BaseCommand<T> {
       runner,
       reporters: [process.env.TEST_REPORTER ?? 'default'],
       pool: flags.pool as 'forks' | 'threads',
+      isolate: process.env.EGG_VITEST_ISOLATE !== 'false',
       fileParallelism: process.env.EGG_FILE_PARALLELISM !== 'false',
       // vitest 4 moved poolOptions to top-level
       execArgv: [...this.globalExecArgv],
