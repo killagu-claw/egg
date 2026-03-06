@@ -64,7 +64,10 @@ jobs:
               EGG_FILE_PARALLELISM=false npm run test:local
 
               # Deployment test: start the app and verify it boots correctly
-              npm run clean
+              # Rebuild in-place (.js alongside .ts) so Node can load config and app files.
+              # We can't use `dist/` (causes duplicate module names with source) and can't
+              # load raw .ts (decorators aren't supported by Node's type stripping).
+              npm run build
               echo "Preparing database for deployment test..."
               CNPMCORE_DATABASE_NAME=cnpmcore bash ./prepare-database-mysql.sh
 
@@ -94,6 +97,10 @@ jobs:
               echo "Health check failed: status=$last_status"
               cat "$TMP" || true
               rm -f "$TMP"
+              echo "=== Error logs ==="
+              tail -100 ~/logs/cnpmcore/common-error.log 2>/dev/null || echo "No error log"
+              echo "=== App logs (last 50 lines) ==="
+              tail -50 ~/logs/cnpmcore/cnpmcore-web.log 2>/dev/null || echo "No app log"
               npx eggctl stop || true
               exit 1
           - name: examples
